@@ -1,42 +1,46 @@
+// reducer (etat actuel + actions) et gestion des actions asynchrones
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 
-// LOGIN : changes state and stores token in localStorage
+// ACTION ASYNC DE CONNEXION
 export const loginUser = createAsyncThunk(
+  // Nom de l'action utilisé par Redux
   "user/loginUser",
   async (credentials, thunkAPI) => {
     try {
       const response = await fetch("http://localhost:3001/api/v1/user/login", {
-        method: "POST",
+        method: "POST", // soumission du formulaire de connexion
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(credentials), // credentials = email + password
       })
 
       const data = await response.json()
+      // Si la réponse n'est pas ok, rejeter l'action avec le message d'erreur du backend
       if (!response.ok) return thunkAPI.rejectWithValue(data.message)
-
-      localStorage.setItem("token", data.body.token)
-
-      return data.body
+        // Stocker le token dans le localStorage pour persister la connexion
+        localStorage.setItem("token", data.body.token)
+        // Retourner les données du token pour mettre à jour le state de l'utilisateur
+        return data.body
+    // En cas d'erreur réseau ou autre, rejeter l'action avec le message d'erreur
     } catch (error) {
       return thunkAPI.rejectWithValue(error.message)
     }
   }
 )
 
-// FETCH USER PROFILE : changes state with user profile data
+// ACTION ASYNC POUR RECUPERER LE PROFIL UTILISATEUR CONNECTE
 export const fetchUserProfile = createAsyncThunk(
   "user/fetchUserProfile",
-  async (_, thunkAPI) => {
+  async (_, thunkAPI) => { // Pas de paramètre car on utilise le token pour identifier l'utilisateur
     try {
-      const state = thunkAPI.getState()
-      const token = state.user.token
+      const state = thunkAPI.getState() // Récupérer l'état actuel du store pour accéder au token
+      const token = state.user.token // Récupérer le token de l'utilisateur depuis le state
       if (!token) return thunkAPI.rejectWithValue("Utilisateur non authentifié")
 
       const response = await fetch("http://localhost:3001/api/v1/user/profile", {
-        method: "GET",
+        method: "GET", // récupération du profil de l'utilisateur connecté
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // Envoi du token dans l'en-tête Authorization
         },
       })
 
@@ -50,7 +54,7 @@ export const fetchUserProfile = createAsyncThunk(
   }
 )
 
-// UPDATE USERNAME : changes state with updated username
+// ACTION ASYNC POUR METTRE A JOUR LE NOM D'UTILISATEUR
 export const updateUsername = createAsyncThunk(
   "user/updateUsername",
   async (newUsername, thunkAPI) => {
@@ -60,7 +64,7 @@ export const updateUsername = createAsyncThunk(
       if (!token) return thunkAPI.rejectWithValue("Utilisateur non authentifié")
 
       const response = await fetch("http://localhost:3001/api/v1/user/profile", {
-        method: "PUT",
+        method: "PUT", // remplacement du nom d'utilisateur dans le profil de l'utilisateur connecté
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -78,30 +82,31 @@ export const updateUsername = createAsyncThunk(
   }
 )
 
-// INITIAL STATE
+// ETAT INITIAL DE L'UTILISATEUR
 const initialState = {
-  token: localStorage.getItem("token") || null,
+  token: localStorage.getItem("token") || null, // récupérer le token
   user: null,
-  isAuthenticated: !!localStorage.getItem("token"),
+  isAuthenticated: !!localStorage.getItem("token"), // est authentifié s'il y a un token
   isLoading: false,
   error: null,
 }
 
-// SLICE
+// SLICE DE L'UTILISATEUR (CONNEXION, PROFIL, MISE A JOUR DU NOM D'UTILISATEUR)
 const userSlice = createSlice({
-  name: "user",
-  initialState,
+  name: "user", // Nom du slice
+  initialState, // Etat initial de l'utilisateur
   reducers: {
-    logout: (state) => {
+    logout: (state) => { // Action de déconnexion
       state.user = null
       state.token = null
       state.isAuthenticated = false
       localStorage.removeItem("token")
     },
   },
+  // Gestion des actions asynchrones avec les cas pour chaque étape de chaque action async
   extraReducers: (builder) => {
-    builder
-      // LOGIN
+    builder // construction des actions
+      // LOGIN USER (connexion de l'utilisateur)
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true
         state.error = null
@@ -116,7 +121,7 @@ const userSlice = createSlice({
         state.error = action.payload
       })
 
-      // FETCH PROFILE
+      // FETCH PROFILE USER (récupération du profil de l'utilisateur connecté)
       .addCase(fetchUserProfile.pending, (state) => {
         state.isLoading = true
         state.error = null
@@ -130,7 +135,7 @@ const userSlice = createSlice({
         state.error = action.payload
       })
 
-      // UPDATE USERNAME
+      // UPDATE USERNAME (mise à jour du nom d'utilisateur)
       .addCase(updateUsername.pending, (state) => {
         state.isLoading = true
         state.error = null
@@ -146,5 +151,8 @@ const userSlice = createSlice({
   },
 })
 
+// action logout exportée pour être utilisée dans les composants
 export const { logout } = userSlice.actions
+
+// reducer à brancher dasns le store redux
 export default userSlice.reducer

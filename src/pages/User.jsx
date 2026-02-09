@@ -6,7 +6,9 @@ function User() {
   const dispatch = useDispatch()
   const { user, isLoading, error, token } = useSelector((state) => state.user)
 
+  // État local pour gérer le mode édition et le champ de saisie du nom d'utilisateur
   const [isEditing, setIsEditing] = useState(false)
+  // Si user déjà chargé, alors on met le nom d'utilisateur existant, sinon chaîne vide
   const [usernameInput, setUsernameInput] = useState(user?.userName || "")
 
   // Fetch profile si token existant et user non encore chargé

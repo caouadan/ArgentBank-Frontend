@@ -4,9 +4,10 @@ import { loginUser, fetchUserProfile } from "../store/userSlice"
 import { useNavigate } from "react-router-dom"
 
 function SignIn() {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+  const dispatch = useDispatch() // Hook pour la navigation
+  const navigate = useNavigate() // Hook pour accéder à l'état d'authentification et de chargement
 
+  // Récupère les états d'authentification, de chargement et d'erreur depuis le store Redux
   const { isAuthenticated, isLoading, error } = useSelector(
     (state) => state.user
   )
@@ -15,6 +16,7 @@ function SignIn() {
   const [password, setPassword] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
 
+  // Fonction de soumission du formulaire de connexion
   const handleSubmit = (e) => {
     e.preventDefault()
     dispatch(
